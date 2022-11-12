@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "vera2epub4pb"
+version = "0.1.0"
+description = ""
+authors = ["Aleš Daniel <ales.daniel@adpro.cz>"]
+readme = "README.md"
+packages = [{include = "vera2epub4pb"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+lxml = "^4.9.1"
+ebooklib = "^0.17.1"
+pikepdf = "^6.2.1"
+pymupdf = "^1.20.2"
+loguru = "^0.6.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".", "vera2epub4pb"
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
