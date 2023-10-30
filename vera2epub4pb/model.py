@@ -18,7 +18,7 @@ class ProgrammeItem():
     processor: str = ""         # zpracovatel
     reason_text: str = ""       # text duvodove zpravy
     attachments: list = field(default_factory=list)      # prilohy s nazvy
-    link: str = ""              # odkaz na dokument
+    link: str = ""              # odkaz na usneseni
 
 
 @dataclass
@@ -27,3 +27,4 @@ class Attachment():
     name: str
     extension: str
     files: list = field(default_factory=list)
+    orig_files: list = field(default_factory=list)

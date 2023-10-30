@@ -9,7 +9,9 @@ import subprocess
 import zipfile
 import sys
 import argparse
+import shutil
 
+import pdfkit
 import fitz
 
 from io import StringIO
@@ -17,8 +19,7 @@ from datetime import datetime
 
 from lxml import etree
 from ebooklib import epub
-from pikepdf import Pdf, Page
-from urllib.parse import quote_plus
+from pikepdf import Pdf, Page   # for rotating pages
 from loguru import logger
 
 from exceptions import *
@@ -112,7 +113,7 @@ def convert_file_to_supported_type(old_filepath) -> str:
     new_filename = '.'.join([filename,'pdf'])
     new_filepath = os.path.join(tmp_dir.name, new_filename)
     new_path = os.path.dirname(new_filepath)
-    if ext in ['.docx', '.doc', '.xls', '.xlsx']:
+    if ext in ['.docx', '.doc', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.bmp', '.tif']:
         logger.info(f'Converting {os.path.basename(old_filepath)} to {os.path.basename(new_filepath)}...')
         subprocess.call([get_libre_office_path(), '--headless', '--convert-to', 'pdf', old_filepath, '--outdir', new_path])
         return new_filepath, 'pdf'
@@ -130,7 +131,7 @@ def get_attachments_from_html(root, xpath, path) -> str:
             for tag in a_tags:
                 full_path = os.path.normpath(os.path.join(os.path.dirname(path), tag.attrib["href"]))
                 ext = pathlib.Path(full_path).suffix.lower()
-                attachments.append(Attachment(uuid.uuid4(),tag.text, ext, [full_path]))
+                attachments.append(Attachment(uuid.uuid4(),tag.text, ext, [full_path], [full_path]))
             return attachments
     return ""
 
@@ -572,7 +573,8 @@ def convert_files_to_pdf(items):
                                         uuid.uuid4(),
                                         attachment.name,
                                         ext,
-                                        [new_path]))
+                                        [new_path],
+                                        attachment.orig_files))
         upd_p_item = ProgrammeItem(p_item.id,
                                     p_item.name,
                                     p_item.time,
@@ -655,6 +657,102 @@ def debug_print_items_attachments(items):
         for attachment in p_item.attachments:
             logger.trace(f'\t{attachment}')
 
+# ====================== single PDF output file ======================
+
+def get_pdf_ebook_name(header) -> str:
+    if 'zastupit' in header.no_council_meeting.lower():
+        prefix = 'ZM_'
+    if 'rad' in header.no_council_meeting.lower():
+        prefix = 'RM_'
+    date_of_meeting = header.location_and_time.split()[3].split('.')
+    month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
+    day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
+    return f'{prefix}{date_of_meeting[2]}-{month}-{day}_A4.pdf'
+
+
+def create_basic_pdf(header, items, index_filepath, input_path, output_path):
+    filepath_ebook = os.path.join(output_path, get_pdf_ebook_name(header))
+
+    html_paths = [item.link for item in items if len(item.link) > 1]
+    logger.trace(f'html paths of files: {html_paths}')
+    html_paths.insert(0, index_filepath)
+
+    # change css in input for our custom file
+    css_filepath = os.path.join(input_path, "css/style.css")
+    new_css_filepath = os.path.join(input_path, "css/style_orig.css")
+    shutil.copyfile(css_filepath, new_css_filepath)
+    shutil.copyfile("../files/css/style.css",css_filepath)
+
+    options = {
+        'page-size': 'A4',
+        'margin-top': '0.5in',
+        'margin-right': '0.5in',
+        'margin-bottom': '0.5in',
+        'margin-left': '0.5in',
+        'encoding': "UTF-8",
+        'enable-local-file-access': None,
+        'no-outline': None,
+        'orientation': 'Portrait',
+        'header-font-name': 'Times New Roman',
+        'header-font-size': 12,    
+    }
+    pdfkit.from_file(html_paths, filepath_ebook, 
+                    options=options,
+                    verbose=True)
+
+
+    if os.path.exists(filepath_ebook):
+        logger.success(f"Ebook written in {filepath_ebook}.")
+    else:
+        logger.error(f'Something wrong during ebook writing to {filepath_ebook}.')
+
+    # return css file from orig back
+    shutil.move(new_css_filepath, css_filepath)
+
+    return filepath_ebook
+
+
+def update_attachment_file(att_doc, orig_filename, item, attachment):
+    # att_doc
+    page_count = att_doc.page_count
+    for i in range(page_count):
+        page = att_doc[i]
+        r = fitz.Rect(36,36,136,72)  # rectangle
+        shape = page.new_shape()  # create Shape
+        shape.draw_rect(r)  # draw rectangles
+        shape.finish(width = 0.3, color = (0,0,0), fill = (1,1,1))
+        t = f'{item.id} {item.name} | {attachment.name}'
+        rc = shape.insert_textbox(r, t, color = (0,0,0))
+        # rc = shape.insert_textbox(r, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN)
+        # rc = shape.insert_textbox(r, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo')
+        shape.commit()  # write all stuff to page /Contents
+        att_doc.save(orig_filename, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+
+
+def add_items_to_pdf(orig_file, items, input_path):
+    doc = fitz.open(orig_file)
+    logger.trace(f'Doc info: {doc.get_toc()}')
+    for item in items:
+        for attachment in item.attachments:
+            for file in attachment.files:
+                att = fitz.open(file)
+                update_attachment_file(att, file, item, attachment)
+                logger.trace(f'Attachment info: {item.id} {attachment.name} {file} {att.get_toc()}')
+                doc.insert_pdf(att)
+                att.close()
+    doc.save(orig_file, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+    doc.close()
+
+
+def create_programme_item_pdfs(header, items, index_filepath, input_path, output_path, tmp_dir):
+    pass
+
+
+def create_pdf_ebook(header, items, index_filepath, input_path, output_path, meta_author, meta_contributor, meta_source):
+    # create PDF from HTML with wkhtmltopdf and PDFkit from programme and programme items only, without attachments
+    pdf = create_basic_pdf(header, items, index_filepath, input_path, output_path)
+    add_items_to_pdf(pdf, items, input_path)
+
 
 if __name__ == "__main__":
 
@@ -715,18 +813,24 @@ if __name__ == "__main__":
     items = convert_files_to_pdf(items)
     debug_print_items_attachments(items)
 
-    logger.info(f'Rotating landscape pdf files...')
-    rotate_landscape_pdf_files(items)
+    # logger.info(f'Rotating landscape pdf files...')
+    # rotate_landscape_pdf_files(items)
 
-    logger.info(f'Converting PDF files to multiple PNG images...')
-    items = convert_attachments_to_pngs(items, tmp_dir)
-    debug_print_items_attachments(items)
+    # logger.info(f'Converting PDF files to multiple PNG images...')
+    # items = convert_attachments_to_pngs(items, tmp_dir)
+    # debug_print_items_attachments(items)
 
-    logger.info(f'Creating ePub3 ebook...')
-    epub = create_ebook(header, items, output_path, input_author, input_contributor, input_source)
+    # logger.info(f'Creating ePub3 ebook...')
+    # epub = create_ebook(header, items, output_path, input_author, input_contributor, input_source)
 
-    logger.info(f'Creating html notes...')
-    create_html_notes(header, items, output_path)
+    logger.info(f'Creating PDFs for programme items...')
+    pitem_pdfs = create_programme_item_pdfs(header, items, index_filepath, input_path, output_path, tmp_dir)
+
+    logger.info(f'Creating PDF ebook...')
+    pdf = create_pdf_ebook(header, items, index_filepath, input_path, output_path, input_author, input_contributor, input_source)
+
+    # logger.info(f'Creating html notes...')
+    # create_html_notes(header, items, output_path)
     tmp_dir.cleanup()
     tmp_dir = None
 

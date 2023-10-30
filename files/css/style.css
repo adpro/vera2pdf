@@ -1,0 +1,69 @@
+/*RESET*/
+html, body, div, span, applet, object, iframe,h1, h2, h3, h4, h5, h6, p, blockquote, pre,a, abbr, acronym, address, big, cite, code,del, dfn, em, img, ins, kbd, q, s, samp,small, strike, strong, sub, sup, tt, var,b, u, i, center,dl, dt, dd, ol, ul, li,fieldset, form, label, legend,table, caption, tbody, tfoot, thead, tr, th, td,article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary,time, mark, audio, video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline;}
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section{display:block;}
+body{line-height:1;}
+ol, ul{list-style:none;}
+blockquote, q{quotes:none;}
+blockquote:before, blockquote:after,q:before, q:after{content:'';content:none;}
+@font-face { font-family: "Literata"; src: local("Literata"), url("../fonts/literata-regular.otf") format("opentype"); }
+@font-face { font-family: "Literata Bold"; src: local("Literata-bold"), url("../fonts/literata-bold.otf") format("opentype"); }
+@font-face { font-family: "Literata Italic"; src: local("Literata-italic"), url("../fonts/literata-italic.otf") format("opentype"); }
+span { font-family: initial !important; font-size: initial !important;}
+/*GLOBAL*/
+@media screen{body{color:#000;background-color:#FFF;font-family: Literata, courier, Tahoma, Geneva, sans-serif;margin:2.45em 0; font-size:13pt;}}
+#content{margin-left:auto;margin-right:auto;width:49.61em;line-height:1.5;text-align:justify;}
+hr{border:none 0;border-top:1px solid;height:1px;}
+hr.cela{width:100%;}
+/*USNESENI*/
+.cisloID{font-size:2em;margin-left:1em;text-align:left;font-weight:bold;border:none;}
+table.hlavicka{text-align:center;width:100%;}
+td.nazevOrganizace{font-size:1.5em;font-family:Arial,Helvetica, sans-serif;font-weight:bold;}
+td.typDokumentu{font-family:Arial, Helvetica, sans-serif;font-size:1.6em;text-transform:uppercase;letter-spacing:.5em;}
+td.jednani{font-size:1.2em;font-family:Arial, Helvetica, sans-serif;}
+.nadpis{font-size:1.2em;font-weight:bold;text-decoration:underline;margin-top:.9em;text-align:center;}
+.obsah{margin-top:.9em; display: none;}
+.prohlaseni{margin-top:1.6em; display: none;}
+.nadpisPolozka{margin-top:1.6em;font-weight:bold;}
+.textPolozka{margin-left:2.45em;}
+.textPodpolozka{margin-left:2.45em;margin-top:.4em;}
+.textUkolu{margin-left:4em;margin-top:.4em;}
+.terminUkolu{text-align:right;margin-top:.4em;margin-right:0;}
+table.hlasovani{margin-top:2.5em;width:100%;border:thin solid;}
+td.hlasovaniVysledek{width:15em;}
+.stavHlasovani{text-transform:uppercase;margin-left:1em;font-weight:bold;}
+table.podpisy{margin-top:7em;text-align:center;width:100%; display: none;}
+table.akteri{text-align:left;margin-top:0.2em;border:none;width:100%;}
+td.predkladatelLabel{text-align:left;width:15em;}
+#content::after {
+    margin-left:0.75em;margin-right:auto;width:49.61em;line-height:1.5;text-align:justify;
+    content: "Hlasování: \00a0\00a0 Pro ____ \00a0\00a0Proti ____ \00a0\00a0Zdržel se: ____ \00a0\00a0Nehlasoval: ____ \00a0\00a0 \00a0\00a0 Usnesení přijato: \00a0\00a0 ANO \00a0\00a0 / \00a0\00a0 NE";
+  }
+/*PROGRAM*/ 
+table.hlavicka{text-align:center;letter-spacing:0.1em;  margin-left:auto;margin-right:auto;}
+td.nadpis{font-size:1.5em;font-family:Arial, Helvetica, sans-serif;letter-spacing:0.5em;text-transform:uppercase;}
+#program{font-size:1.2em;font-weight:bold;}
+table.program{margin-top:2em;width:100%;letter-spacing:0.1em;border:1px solid black;border-collapse:collapse;}
+tr.popisek{font-weight:bold;background-color:#DBDBDB;}
+table.program td{border:1px solid black;text-align:center;padding:5px;}
+table.program td.left{text-align:left;}
+table.podpis {display: none;}
+table.program td:nth-child(3) { display: none;}
+.u{text-decoration:underline;}
+/*ZAPIS*/
+table.zapis{margin-top:2em;width:100%;font-weight:normal;border:1px solid black;border-collapse:collapse;}
+table.zapis td{padding:10px;}
+tr.popisek{font-weight:bold;background-color:#DBDBDB;}
+td.oramovani{border:1px solid black;text-align:center;width:10%;}
+td.oramovaniLeft{border:1px solid black;text-align:left;}
+td.cisloBodu{text-align:center;border-right:1px solid #000;vertical-align:top;}
+td.cisloUsneseni{text-align:center;border-right:1px solid #000;border-bottom:1px solid #000;    vertical-align:top;}
+td.dolniOkraj{border-bottom:1px solid #000;}
+table.dochazka{width:100%;}
+table.dochazka td{text-align:left;border:none;letter-spacing:.1em;width:100%;vertical-align:top;}
+table.dochazka td.leftcol{padding-bottom:.8em;width:20%;}
+.nadpisUsneseni{font-weight:bold;}
+table.vnorenaTabulka{width:100%;font-weight:normal;}
+table.vnorenaTabulka td{padding:0;}
+td.hlasovani{vertical-align:top;text-align:justify;}
+/*PRINT*/
+@media print{body{color:#000;background-color:#FFF;font-family: Literata, courier, serif;margin:2.45em 0; font-size:13pt;}}
