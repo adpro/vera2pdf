@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/DTD/html4/loose.dtd">
+<html>
+
+<head>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link media="screen, print" type="text/css" rel="stylesheet" href="../css/style.css">
+    <meta content="cs" name="language">
+    <title>Bod jedn&aacute;n&iacute;</title>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type">
+</head>
+
+<body>
+    <div id="pitem_{{ id }}"></div>
+    <div id="content">
+        <table class="hlavicka">
+            <tr>
+                <td class="nazevOrganizace">Město Česk&aacute; Kamenice</td>
+            </tr>
+            <tr>
+                <td class="typDokumentu">Bod jedn&aacute;n&iacute;</td>
+            </tr>
+            <tr>
+                <td class="jednani">{{ no_council_meeting }}</td>
+            </tr>
+            <tr>
+                <td class="jednani">{{ location_and_time }}</td>
+            </tr>
+            <tr>
+                <td>
+                    <hr class="cela">
+                </td>
+            </tr>
+        </table>
+        <div class="nadpis">{{ id }}. {{ name }}</div>
+        <div class="obsah">
+            <br>
+        </div>
+        <div class="nadpisPolozka"> </div>
+        <div class="textPolozka"> </div>
+        <hr class="cela">
+
+        <table class="podpisy">
+            <tr>
+                <td>Hlasování:</td>
+                <td>Pro ____ </td>
+                <td>Proti ____ </td> 
+                <td>Zdržel se: ____ </td>
+                <td>Nehlasoval: ____ </td>
+            </tr>
+        </table>
+        <table class="podpisy">
+            <tr>
+                <td width="30%">Usnesení přijato:</td>
+                <td width="20%">&#9634; ANO</td>
+                <td width="20%">&#9634; NE</td>
+                <td width="30%">&#9634; Staženo</td>
+            </tr>
+        </table>
+        <hr class="cela">
+
+        <table cellspacing="10" class="akteri">
+            <tr>
+                <td class="predkladatelLabel">Předkladatel:</td>
+                <td>{{ presenter }}</td>
+            </tr>
+            <tr>
+                <td style="vertical-align:top;">Přizv&aacute;ni:</td>
+                <td></td>
+            </tr>
+        </table>
+        <hr class="cela">
+        <table cellspacing="10" class="akteri">
+            <tr>
+                <td style="vertical-align:top;color: blue;">Pozn&aacute;mky:</td>
+                <td><br><br><br></td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>
