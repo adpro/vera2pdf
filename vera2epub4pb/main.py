@@ -552,6 +552,10 @@ def extract_zip_files(items, tmp_dir):
                             filepath_extract = os.path.normpath(os.path.join(tmp_dir.name, filename))
                             with open(filepath_extract, 'wb') as f:
                                 f.write(zipobject.read(file))
+                            if os.path.isdir(filepath_extract):
+                                continue
+                            if os.stat(filepath_extract).st_size == 0:
+                                continue
                             # zipobject.extract(file, filepath_extract)
                             ext_extract = pathlib.Path(filepath_extract).suffix.lower()
                             upd_attachments.append(Attachment(
@@ -797,6 +801,8 @@ def repair_pdf_if_needed(attachment, tmp_path):
         os.makedirs(filepath)
 
     for i in range(len(attachment.files)):
+        logger.trace(f'Attachment {attachment}')
+        logger.trace(f'Attachment files list, list item {attachment.files[i]}')
         att_doc = fitz.open(attachment.files[i])
         if not att_doc.can_save_incrementally():
             # logger.trace(f'Attachment {attachment.files[i]} had been repaired by PyMuPDF. Warnings: {fitz.Tools.mupdf_warnings()}')
