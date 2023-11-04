@@ -119,7 +119,11 @@ def convert_file_to_supported_type(old_filepath, tmp_path) -> str:
         os.makedirs(tmp_attachments_path)
     new_filepath = os.path.join(tmp_attachments_path, new_filename)
     new_path = os.path.dirname(new_filepath)
-    if ext in ['.docx', '.doc', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.bmp', '.tif']:
+    if ext in ['.docx', '.doc', '.odt', 
+               '.xls', '.xlsx', '.ods',
+               '.ppt', '.pptx', '.odp',
+               '.txt',
+               '.jpg', '.jpeg', '.png', '.bmp', '.tif']:
         logger.info(f'\tConverting {os.path.basename(old_filepath)} to {os.path.basename(new_filepath)}...')
         subprocess.call([get_libre_office_path(), '--headless', '--convert-to', 'pdf', old_filepath, '--outdir', new_path]
                         , stdout=subprocess.DEVNULL 
