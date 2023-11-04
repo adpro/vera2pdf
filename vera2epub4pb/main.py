@@ -132,7 +132,7 @@ def convert_file_to_supported_type(old_filepath, tmp_path) -> str:
     else:
         new_filename = '.'.join([filename,ext[1:]])
         new_filepath = os.path.join(tmp_attachments_path, new_filename)
-        logger.info(f'\tCopying {os.path.basename(old_filepath)} to {new_filepath}...')
+        logger.info(f'\tCopying {os.path.basename(old_filepath)} to temp folder...')
         shutil.copyfile(old_filepath, new_filepath)
         return new_filepath, ext[1:]
 
@@ -291,7 +291,6 @@ def get_notes_name(header) -> str:
     month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
     day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
     return f'{prefix}{date_of_meeting[2]}-{month}-{day}_notes.html'
-
 
 
 def generate_references_attachment(attachment: Attachment):
@@ -551,6 +550,7 @@ def extract_zip_files(items, tmp_dir):
                     with zipfile.ZipFile(filepath, 'r') as zipobject:
                         extract_list = zipobject.namelist()
                         for file in extract_list:
+                            logger.trace(f'Extracting {file} from {filepath}..')
                             zip_filename = encode_charset(file)
                             filename = get_zipped_normalized_filename(zip_filename)
                             filepath_extract = os.path.normpath(os.path.join(tmp_dir.name, filename))
@@ -793,7 +793,7 @@ def print_programme_item(item, tmp_path):
                      options=options,
                      verbose=False)
     if os.path.exists(filepath_pdf):
-        logger.info(f"\tProgramme item written in {filepath_pdf}.")
+        logger.info(f"\tProgramme item written in {os.path.basename(filepath_pdf)}.")
     else:
         logger.error(f'Something wrong during programme item writing to {filepath_pdf}.')
     return filepath_pdf
@@ -884,10 +884,10 @@ def update_programme_item_links_to_local(pitem_pages_no, doc, pdf_file, item, at
             link_dict = links[i]
             link_dict['kind'] = fitz.LINK_GOTO
             link_dict['page'] = pitem_pages_no + sum(attachments_pages_no[:used])
-            logger.trace(f'Update link dict: {link_dict}')
+            logger.trace(f'Update link dict: {link_dict}, doc pages: {len(doc)}')
             used += 1
             doc[p_index].update_link(link_dict)
-    for p_index in range(pitem_pages_no, pitem_pages_no + sum(attachments_pages_no)):
+        logger.trace(f'Adding "Zpet" link.. p_index: {p_index}, pitem_pages_no: {pitem_pages_no}, whole pages: {pitem_pages_no + sum(attachments_pages_no)}, doc pages: {len(doc)}')
         page = doc[p_index]
         rect = page.bound() # get page dimensions
         r = fitz.Rect(rect.width-38,40,rect.width-8,56)  # rectangle
@@ -981,7 +981,7 @@ def print_programme(header, tmp_path, tmp_index_filepath):
                      options=options,
                      verbose=False)
     if os.path.exists(filepath_pdf):
-        logger.info(f"\tProgramme written in {filepath_pdf}.")
+        logger.info(f"\tProgramme written in {os.path.basename(filepath_pdf)}.")
     else:
         logger.error(f'Something wrong during programme writing to {filepath_pdf}.')
     return filepath_pdf
@@ -1142,7 +1142,7 @@ def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
                      options=options,
                      verbose=False)
     if os.path.exists(filepath_pdf):
-        logger.info(f"\tCover page written in {filepath_pdf}.")
+        logger.info(f"\tCover page written in {os.path.basename(filepath_pdf)}.")
     else:
         logger.error(f'Something wrong during cover page writing to {filepath_pdf}.')
     logger.info(f'\tJoining PDF cover with programme PDF...')
