@@ -1041,9 +1041,6 @@ def update_links_in_joined_pdf(joined_pdf, pages):
             doc[p_index].update_link(link_dict)
             # insert backlink
             page = doc[sum(pages[:idx+i+1])]
-
-            # r = create_pdf_shape_link(page, 120, 40, ' Program ')
-            rect = page.bound() # get page dimensions
             p = fitz.Point(0, 0)
             logger.trace(f'Program link. Page bounds: {page.rect}. Top-left (0,0): {p * page.rotation_matrix}')
             # link to programme page from top-center
@@ -1091,20 +1088,6 @@ def create_programme_index_pdf(index_filepath, tmp_path, header, items):
 
 
 def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
-    # output_filepath = os.path.join(output_path, os.path.basename(joined_pdf))
-    # doc = fitz.open(joined_pdf)
-    # page = doc.new_page(0, # insertion point
-    #                     width = 595, # page dimension: A4 portrait
-    #                     height = 842)
-    # rc = page.insert_text(fitz.Point(100,300),  # bottom-left of 1st char
-    #                  f'PROGRAM {header.no_council_meeting}',  # the text (honors '\n')
-    #                  fontname = "helv",  # the default font
-    #                  fontsize = 11,  # the default font size
-    #                  rotate = 0,  # also available: 90, 180, 270
-    #                  )
-    # doc.save(output_filepath) # save the document    
-    
-    # files/css/style.css
     logger.info(f'\tCopying custom css for frontpage to temp dir...')
     css_filepath = os.path.join(tmp_path, "css")
     if not os.path.exists(css_filepath):
@@ -1154,11 +1137,6 @@ def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
     doc.close()
     cover.close()
     return output_filepath
-
-# def create_pdf_ebook(header, items, index_filepath, input_path, output_path, meta_author, meta_contributor, meta_source):
-#     # create PDF from HTML with wkhtmltopdf and PDFkit from programme and programme items only, without attachments
-#     pdf = create_basic_pdf(header, items, index_filepath, input_path, output_path)
-#     add_items_to_pdf(pdf, items, input_path)
 
 
 if __name__ == "__main__":
@@ -1220,16 +1198,6 @@ if __name__ == "__main__":
     items = convert_files_to_pdf(items, tmp_dir.name)
     debug_print_items_attachments(items)
 
-    # logger.info(f'Rotating landscape pdf files...')
-    # rotate_landscape_pdf_files(items)
-
-    # logger.info(f'Converting PDF files to multiple PNG images...')
-    # items = convert_attachments_to_pngs(items, tmp_dir)
-    # debug_print_items_attachments(items)
-
-    # logger.info(f'Creating ePub3 ebook...')
-    # epub = create_ebook(header, items, output_path, input_author, input_contributor, input_source)
-
     logger.info(f'Creating PDFs for programme items...')
     create_programme_item_pdfs(header, items, tmp_dir.name)
     logger.info(f'Creating PDF for index programme...')
@@ -1241,12 +1209,6 @@ if __name__ == "__main__":
     else:
         logger.error(f'Something wrong during writing complete PDF to {pdf_output_filepath}.')
 
-
-    # logger.info(f'Creating PDF ebook...')
-    # pdf = create_pdf_ebook(header, items, index_filepath, input_path, output_path, input_author, input_contributor, input_source)
-
-    # logger.info(f'Creating html notes...')
-    # create_html_notes(header, items, output_path)
     # input("Press ENTER for cleanup temp dir")
     tmp_dir.cleanup()
     tmp_dir = None
