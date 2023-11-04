@@ -523,7 +523,7 @@ def create_html_notes(header, items, programme_path):
 
 
 def encode_charset(s, charset='cp852'):
-    filename_bytes = s.encode('437')
+    filename_bytes = unidecode(s).encode('437')
     guessed_encoding = charset # chardet.detect(filename_bytes)['encoding'] or 'cp1252'
     filename = filename_bytes.decode(guessed_encoding, 'replace')
     return filename
@@ -883,10 +883,11 @@ def update_programme_item_links_to_local(pitem_pages_no, doc, pdf_file, item, at
         for i in range(len(links)):
             link_dict = links[i]
             link_dict['kind'] = fitz.LINK_GOTO
-            link_dict['page'] = pitem_pages_no + sum(attachments_pages_no[:used])
+            link_dict['page'] = min(pitem_pages_no + sum(attachments_pages_no[:used]), len(doc)-1)
             logger.trace(f'Update link dict: {link_dict}, doc pages: {len(doc)}')
             used += 1
             doc[p_index].update_link(link_dict)
+    for p_index in range(pitem_pages_no, min(pitem_pages_no + sum(attachments_pages_no), len(doc))):
         logger.trace(f'Adding "Zpet" link.. p_index: {p_index}, pitem_pages_no: {pitem_pages_no}, whole pages: {pitem_pages_no + sum(attachments_pages_no)}, doc pages: {len(doc)}')
         page = doc[p_index]
         rect = page.bound() # get page dimensions
@@ -1027,6 +1028,7 @@ def create_pdf_shape_link(page, width, pos_y, text):
 
 
 def update_links_in_joined_pdf(joined_pdf, pages):
+    link_height = 128
     doc = fitz.open(joined_pdf)
     logger.trace(f'Linking programme to programme items pages. Pages: {pages}, sums: {[sum(pages[:i]) for i in range(len(pages))]}')
     idx = 0
@@ -1044,7 +1046,7 @@ def update_links_in_joined_pdf(joined_pdf, pages):
             p = fitz.Point(0, 0)
             logger.trace(f'Program link. Page bounds: {page.rect}. Top-left (0,0): {p * page.rotation_matrix}')
             # link to programme page from top-center
-            link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(200,0,400,128), 'page': p_index}
+            link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(200,0,400,link_height), 'page': p_index}
             page.insert_link(link_dict2)
         idx += len(links)
     doc.save(joined_pdf, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
@@ -1054,10 +1056,9 @@ def update_links_in_joined_pdf(joined_pdf, pages):
         #     page = doc[sum(pages[:i+1])-1]
         # else:
         page = doc[sum(pages[:i+1])]
-
         if i == 0:
             # Next
-            link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(400,0,page.rect.width,128), 'page': sum(pages[:i+2])}
+            link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(420,0,page.rect.width,link_height), 'page': sum(pages[:i+2])}
             page.insert_link(link_dict)
         else:
             if len(doc)-1 > page.number:
@@ -1065,11 +1066,11 @@ def update_links_in_joined_pdf(joined_pdf, pages):
                 page_number = sum(pages[:i+2])
                 if page_number > len(doc)-1:
                     page_number = len(doc)-1
-                link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(400,0,page.rect.width,128), 'page': page_number}
+                link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(420,0,page.rect.width,link_height), 'page': page_number}
                 logger.trace(f'Programme item Next link dict: {link_dict} from page {page.number}')
                 page.insert_link(link_dict)
             # Previous
-            link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(0,0,200,110), 'page': sum(pages[:i])}
+            link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(0,0,180,link_height), 'page': sum(pages[:i])}
             page.insert_link(link_dict2)
     doc.save(joined_pdf, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
     doc.close()
@@ -1133,7 +1134,7 @@ def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
     doc = fitz.open(joined_pdf)
     cover = fitz.open(filepath_pdf)
     doc.insert_pdf(cover, start_at=0)
-    doc.save(output_filepath) # save the document    
+    doc.save(output_filepath, garbage=4, deflate=True, linear=True) # save the document    
     doc.close()
     cover.close()
     return output_filepath
