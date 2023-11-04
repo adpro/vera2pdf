@@ -15,15 +15,12 @@ import pdfkit
 import fitz
 
 from io import StringIO, BytesIO
-from datetime import datetime
 
-from lxml import etree
-from ebooklib import epub
-from pikepdf import Pdf, Page   # for rotating pages
 from loguru import logger
+from lxml import etree
 from jinja2 import Environment, FileSystemLoader
-from bs4 import BeautifulSoup as bs
 from unidecode import unidecode
+from bs4 import BeautifulSoup as bs
 
 from exceptions import *
 from model import *
@@ -214,314 +211,6 @@ def parse_programme(filepath:str):
     return p_header, p_list_items
 
 
-def get_attachment_new_path(old_path):
-    filename = os.path.basename(old_path)
-    new_path = os.path.join('attachments', filename)
-    return new_path
-
-
-def generate_html_attachments(attachments):
-    # links = []
-    # for attachment in attachments:
-    #     images = []
-    #     for file in attachment.files:
-    #         if pathlib.Path(file).suffix.lower() not in ['.png']:
-    #             continue
-    #         new_path = get_attachment_new_path(file)
-    #         image = f'<img src="{new_path}"/>'
-    #         images.append(image)
-    #     links.append(f'<div class"attachment"><p><em>{attachment.name}</em></p>{"".join(images)}</div>')
-    # return "".join(links)
-    links = []
-    for attachment in attachments:
-        links.append(f'<li><a href="references.xhtml#att{attachment.uid}">{attachment.name}</a></li>')
-    return '<ul>' + "".join(links) + '</ul>'
-
-
-def create_chapter(item: ProgrammeItem):
-    # create chapter
-    c_filename = f'chap_{item.id}.xhtml'
-    c_title = f'{item.name}'
-    c = epub.EpubHtml(title=c_title, file_name=c_filename, lang='cs-CZ')
-    c.add_link(href='style/nav.css', rel='stylesheet', type='text/css')
-
-    if not item.resolution:
-        c.content=f'''
-                <h1>{item.id}. {item.name}</h1>
-                <div class="metadata">
-                    <p><span class="title">Předkladatel: </span><span>{item.presenter}</span></p>
-                </div>
-                '''
-    else:
-        txt_attach = ''
-        if len(item.attachments):
-            txt_attach = f'<p><p class="title">Přílohy: </p><div id="ch-att-{item.id}">{generate_html_attachments(item.attachments)}</div></p>'
-        c.content=f'''
-                <h1>{item.id}. {item.name}</h1>
-                <div class="statement"><p class="title">Návrh usnesení:</p><p class="statement">{item.resolution}</p></div>
-                <div class="metadata">
-                    <p><span class="title">Předkladatel: </span><span>{item.presenter}</span></p>
-                    <p><span class="title">Zpracovatel: </span><span>{item.processor}</span></p>
-                </div>
-                <div>
-                    <p><p class="title">Text důvodové zprávy: </p><p class="text">{item.reason_text}</p></p>
-                    {txt_attach}
-                </div>
-                '''
-    return c, c_filename, c_title
-
-
-def get_ebook_name(header) -> str:
-    if 'zastupit' in header.no_council_meeting.lower():
-        prefix = 'ZM_'
-    if 'rad' in header.no_council_meeting.lower():
-        prefix = 'RM_'
-    date_of_meeting = header.location_and_time.split()[3].split('.')
-    month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
-    day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
-    return f'{prefix}{date_of_meeting[2]}-{month}-{day}_pb.epub'
-
-
-def get_notes_name(header) -> str:
-    if 'zastupit' in header.no_council_meeting.lower():
-        prefix = 'ZM_'
-    if 'rad' in header.no_council_meeting.lower():
-        prefix = 'RM_'
-    date_of_meeting = header.location_and_time.split()[3].split('.')
-    month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
-    day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
-    return f'{prefix}{date_of_meeting[2]}-{month}-{day}_notes.html'
-
-
-def generate_references_attachment(attachment: Attachment):
-    images = []
-    for file in attachment.files:
-        new_path = get_attachment_new_path(file)
-        if pathlib.Path(file).suffix.lower() in ['.png', '.jpg', '.gif', '.jpeg', '.bmp', '.tiff']:
-            image = f'<img src="{new_path}"/>'
-        else:
-            image = f'<a href="{new_path}">{attachment.name}</a>'
-        images.append(image)
-    return ''.join(images)        
-
-
-def generate_references_item(item):
-    final_html = []
-    for attachment in item.attachments:
-        myhtml = f'''
-        <div id="att{attachment.uid}">
-            <p>{attachment.name}</p>
-            <p><a href="chap_{item.id}.xhtml#ch-att-{item.id}">Zpět k bodu {item.id}</a></p>
-            {generate_references_attachment(attachment)}
-        </div>
-        '''
-        final_html.append(myhtml)
-    return ''.join(final_html)
-
-
-def generate_references(items):
-    final_html = []
-    for item in items:
-        if len(item.attachments) > 0:
-            myhtml = f'''<div id="nav{item.id}">
-                {generate_references_item(item)}
-                <p><a href="chap_{item.id}.xhtml#ch-att-{item.id}">Zpět k bodu {item.id}</a></p>
-            </div>
-            '''
-            final_html.append(myhtml)
-    return ''.join(final_html)
-
-
-def create_references(items):
-    # create chapter
-    c_filename = f'references.xhtml'
-    c_title = f'Přílohy'
-    c = epub.EpubHtml(title=c_title, file_name=c_filename, lang='cs-CZ')
-    c.add_link(href='style/nav.css', rel='stylesheet', type='text/css')
-    c.content=f'''
-            <h1>Přílohy</h1>
-            <div>{generate_references(items)}
-            </div>
-            '''
-    return c
-
-
-def add_metadata(book: epub.EpubBook, meta_author, meta_contributor, meta_source):
-    if len(meta_author) > 1:
-        book.add_author(meta_author, role='aut')
-    else:
-        book.add_author('IS VERA', role='aut')
-    if len(meta_contributor) > 1:
-        book.add_metadata('DC', 'contributor', meta_contributor, {'id': 'contributor'})
-        book.add_metadata(None, 'meta', 'edt', {'refines': '#contributor', 'property': 'role', 'scheme': 'marc:relators'})
-    if len(input_source) > 2:
-        book.add_metadata('DC', 'source', input_source)
-    today = datetime.now()
-    iso_today = today.isoformat()
-    book.add_metadata(None, 'meta', '', {'name': 'ePub generator', 'content': 'vera2epub4pb'})
-    book.add_metadata('DC', 'date', iso_today)
-
-
-def create_ebook(header, items, path, meta_author, meta_contributor, meta_source):
-    filepath_ebook = os.path.join(path, get_ebook_name(header))
-    book = epub.EpubBook()
-    book.set_identifier(str(uuid.uuid4()))
-    book.set_title(' '.join([header.title, header.no_council_meeting.replace(',','').strip()]))
-    book.set_language('cs-CZ')
-    add_metadata(book, meta_author, meta_contributor, meta_source)
-
-    chapters = []
-    for item in items:
-        chapter, chap_filename, chap_title = create_chapter(item)
-        book.add_item(chapter)
-        chapters.append(chapter)
-        logger.trace(f'item {len(item.attachments)}')
-        for attach in item.attachments:
-            attach_files = attach.files
-            if len(attach_files) > 1:
-                for filepath in attach.files:
-                    file_ext = pathlib.Path(filepath).suffix.lower()
-                    filename = os.path.basename(filepath)
-                    if file_ext == '.png':
-                        image_content = open(filepath, 'rb').read()
-                        img_filename = f'attachments/{filename}'
-                        # img = epub.EpubImage(uid=str(uuid.uuid4()), file_name=img_filename, media_type='image/png', content=image_content)
-                        img = epub.EpubImage()
-                        img.file_name = img_filename
-                        img.media_type = 'image/png'
-                        img.content = image_content
-                        book.add_item(img)
-            else:
-                filepath = attach.files[0]
-                file_content = open(filepath, 'rb').read()
-                obj = epub.EpubItem(file_name=get_attachment_new_path(filepath),
-                                    content=file_content)
-                book.add_item(obj)
-    chapter = create_references(items)
-    chapters.append(chapter)
-    book.add_item(chapter)
-
-    # define Table Of Contents
-    book.toc = (chapters)                
-    # add default NCX and Nav file
-    book.add_item(epub.EpubNcx())
-    book.add_item(epub.EpubNav())
-    # define CSS style
-    style = '''
-@namespace epub "http://www.idpf.org/2007/ops";
-body {
-    font-family: Cambria, Liberation Serif, Bitstream Vera Serif, Georgia, Times, Times New Roman, serif;
-}
-h1, h2, h3 {
-    margin-bottom: 1.5em;
-}
-h1 {
-    font-size: 165%;
-}
-h2 {
-    font-size: 150%;
-}
-h3 {
-    font-size: 135%;
-}
-ol {
-    list-style-type: none;
-}
-ol > li:first-child {
-    margin-top: 0.3em;
-}
-nav[epub|type~='toc'] > ol > li > ol  {
-    list-style-type:square;
-}
-nav[epub|type~='toc'] > ol > li > ol > li {
-    margin-top: 0.3em;
-}
-span.title, p.title {
-    font-style: italic;
-}
-p.statement {
-    font-weight: bold;
-}
-p.indented {
-    text-indent: 2em;
-}
-* a {
-    text-decoration-style: dotted;
-}
-hr.emptyline {
-    width: 0px;
-    margin: 2em;
-    border: none;
-}
-hr.separator {
-    width: 1em;
-    margin-top: 2em;
-    margin-bottom: 2em;
-}
-img {
-    border: none;
-}
-'''
-    # add css file
-    nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
-    book.add_item(nav_css)
-    # basic spine
-    book.spine = ['nav'] + chapters
-
-    epub.write_epub(filepath_ebook, book, {})
-    if os.path.exists(filepath_ebook):
-        logger.success(f"Ebook written in {filepath_ebook}.")
-    else:
-        logger.error(f'Something wrong during ebook writing to {filepath_ebook}.')
-
-
-def create_html_notes(header, items, programme_path):
-    html_items = []
-
-    for item in items:
-        html_item = f'''
-            <h2>{item.id}. {item.name}</h2>
-            <p><br/></p>
-            <hr/>
-        '''
-        html_items.append(html_item)
-
-    html = '''
-    <html>
-        <head>
-            <link rel="preconnect" href="https://fonts.googleapis.com"> 
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
-            <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap" rel="stylesheet">
-            <style>
-            body {
-                font-family: "Literata", serif;
-                font-size: 14px;
-            }
-            h1 {
-                font-weight: bold;   
-                font-size: 18px;
-            }
-            h2 {
-                font-weight: bold;
-                font-size: 15px;
-            }
-            </style>
-        </head>
-    ''' + f'''
-        <body>
-            <h1>{header.title} {header.no_council_meeting}</h1>
-            <p>{header.location_and_time}</p>
-            <hr/>
-            {"".join(html_items)}
-        </body>
-    </html>
-    '''
-    filepath = os.path.join(programme_path, get_notes_name(header))
-    with open(filepath, 'w', encoding='utf8') as f:
-        f.write(html)
-        logger.success(f'Notes written to {filepath}.')
-
-
 def encode_charset(s, charset='cp852'):
     filename_bytes = unidecode(s).encode('437')
     guessed_encoding = charset # chardet.detect(filename_bytes)['encoding'] or 'cp1252'
@@ -609,67 +298,25 @@ def convert_files_to_pdf(items, tmp_path):
     return updated_p_items
 
 
-def rotate_landscape_pdf_files(items):
-    for item in items:
-        for attachment in item.attachments: 
-            if len(attachment.files) == 1:
-                flag = 0
-                filepath = attachment.files[0]
-                ext = pathlib.Path(filepath).suffix.lower()
-                if ext == '.pdf':
-                    pdf = Pdf.open(filepath, allow_overwriting_input=True)
-                    for page in pdf.pages:
-                        cbox = page.cropbox
-                        cbox_x = float(cbox[2]-cbox[0])/72*2.54
-                        cbox_y = float(cbox[3]-cbox[1])/72*2.54
-                        if cbox_x > cbox_y:
-                            if flag == 0:
-                                logger.debug(f'\tRotating {filepath}')
-                                flag = 1                      
-                            page.rotate(270, False)
-                    pdf.save(filepath)
-
-
-def convert_pdf_to_pngs(filepath, attachment: Attachment, tmp_dir) -> Attachment:
-    logger.debug(f'Trying to convert {filepath} pages to png images...')
-    filedir = os.path.dirname(filepath)
-    filename = os.path.basename(filepath)
-    doc = fitz.open(filepath)  # open document
-    pages_filenames = []
-    for page in doc:  # iterate through the pages
-        uid = uuid.uuid4()
-        pix = page.get_pixmap(dpi=150)  # render page to an image
-        new_filepath = os.path.join(tmp_dir.name, filename + f'_{uid}_' + str(page.number) + '.png')
-        pix.save(new_filepath)  # store image as a PNG
-        pages_filenames.append(new_filepath)
-    return Attachment(uid,attachment.name, '.png', pages_filenames)
-
-
-def convert_attachments_to_pngs(items, tmp_dir):
-    updated_p_items = []
-    for p_item in items:
-        upd_attachments = []
-        for attachment in p_item.attachments:
-            if len(attachment.files) == 1:
-                filepath = attachment.files[0]
-                ext = pathlib.Path(filepath).suffix.lower()
-                if ext == '.pdf':
-                    new_attachment = convert_pdf_to_pngs(filepath, attachment, tmp_dir)
-                    upd_attachments.append(new_attachment)
-                else:
-                    logger.debug(f'Skipping {filepath} conversion to png...')
-                    upd_attachments.append(attachment)
-        upd_p_item = ProgrammeItem(p_item.id,
-                                    p_item.name,
-                                    p_item.time,
-                                    p_item.resolution,
-                                    p_item.presenter,
-                                    p_item.processor,
-                                    p_item.reason_text,
-                                    upd_attachments,
-                                    p_item.link)
-        updated_p_items.append(upd_p_item)
-    return updated_p_items
+# def rotate_landscape_pdf_files(items):
+#     for item in items:
+#         for attachment in item.attachments: 
+#             if len(attachment.files) == 1:
+#                 flag = 0
+#                 filepath = attachment.files[0]
+#                 ext = pathlib.Path(filepath).suffix.lower()
+#                 if ext == '.pdf':
+#                     # pdf = Pdf.open(filepath, allow_overwriting_input=True)
+#                     for page in pdf.pages:
+#                         cbox = page.cropbox
+#                         cbox_x = float(cbox[2]-cbox[0])/72*2.54
+#                         cbox_y = float(cbox[3]-cbox[1])/72*2.54
+#                         if cbox_x > cbox_y:
+#                             if flag == 0:
+#                                 logger.debug(f'\tRotating {filepath}')
+#                                 flag = 1                      
+#                             page.rotate(270, False)
+#                     pdf.save(filepath)
 
 
 def debug_print_items_attachments(items):
