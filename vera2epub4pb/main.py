@@ -298,29 +298,6 @@ def convert_files_to_pdf(items, tmp_path):
     return updated_p_items
 
 
-def rotate_landscape_pdf_file(attachment):
-    if len(attachment.files) == 1:
-        flag = 0
-        filepath = attachment.files[0]
-        ext = pathlib.Path(filepath).suffix.lower()
-        if ext == '.pdf':
-            doc = fitz.open(filepath)
-            for page in doc:
-                logger.trace(f'File {filepath}, page {page.number}, rotation {page.rotation} deg, mediabox: {page.mediabox_size}, cropbox: {page.cropbox} WxH {page.cropbox.width}x{page.cropbox.height}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
-                if page.rect.width > page.rect.height:    # landscape
-                    if flag == 0:
-                        logger.debug(f'\tRotating {filepath}')
-                        flag = 1                      
-                    logger.trace(f'Rotating {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')                    
-                    if page.rotation in (90,270):
-                        page.set_rotation(0)
-                    else:
-                        page.set_rotation(270)
-                    logger.trace(f'After rotation of {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
-            doc.save(filepath, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
-            doc.close()
-
-
 def debug_print_items_attachments(items):
     for p_item in items:
         logger.trace(f'DEBUG attachments {p_item.id}')
@@ -446,7 +423,30 @@ def print_programme_item(item, tmp_path):
     else:
         logger.error(f'Something wrong during programme item writing to {filepath_pdf}.')
     return filepath_pdf
-    
+
+
+def rotate_landscape_pdf_file(attachment):
+    if len(attachment.files) == 1:
+        flag = 0
+        filepath = attachment.files[0]
+        ext = pathlib.Path(filepath).suffix.lower()
+        if ext == '.pdf':
+            doc = fitz.open(filepath)
+            for page in doc:
+                logger.trace(f'File {filepath}, page {page.number}, rotation {page.rotation} deg, mediabox: {page.mediabox_size}, cropbox: {page.cropbox} WxH {page.cropbox.width}x{page.cropbox.height}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
+                if page.rect.width > page.rect.height:    # landscape
+                    if flag == 0:
+                        logger.debug(f'\tRotating {filepath}')
+                        flag = 1                      
+                    logger.trace(f'Rotating {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')                    
+                    if page.rotation in (90,270):
+                        page.set_rotation(0)
+                    else:
+                        page.set_rotation(270)
+                    logger.trace(f'After rotation of {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
+            doc.save(filepath, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+            doc.close()
+
 
 def repair_pdf_if_needed(attachment, tmp_path):
     filepath = os.path.join(tmp_path, "attachments")
