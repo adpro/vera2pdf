@@ -433,17 +433,17 @@ def rotate_landscape_pdf_file(attachment):
         if ext == '.pdf':
             doc = fitz.open(filepath)
             for page in doc:
-                logger.trace(f'File {filepath}, page {page.number}, rotation {page.rotation} deg, mediabox: {page.mediabox_size}, cropbox: {page.cropbox} WxH {page.cropbox.width}x{page.cropbox.height}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
+                logger.trace(f'File {os.path.basename(filepath)}, page {page.number}, rotation {page.rotation} deg, mediabox: {page.mediabox_size}, cropbox: {page.cropbox} WxH {page.cropbox.width}x{page.cropbox.height}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
                 if page.rect.width > page.rect.height:    # landscape
                     if flag == 0:
                         logger.debug(f'\tRotating {filepath}')
                         flag = 1                      
-                    logger.trace(f'Rotating {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')                    
+                    logger.trace(f'Rotating {os.path.basename(filepath)}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')                    
                     if page.rotation in (90,270):
                         page.set_rotation(0)
                     else:
                         page.set_rotation(270)
-                    logger.trace(f'After rotation of {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
+                    logger.trace(f'After rotation of {os.path.basename(filepath)}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
             doc.save(filepath, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
             doc.close()
 
@@ -500,16 +500,21 @@ def add_header_to_attachment(item, attachment):
             if not page.is_wrapped:
                 page.wrap_contents()
             # r = fitz.Rect(36,18,536,36)  # rectangle
-            r = fitz.Rect(36,page.rect.height-18,559,page.rect.height)  # rectangle
-            r_rot = r * page.rotation_matrix
+            page = doc[i]
+            r = fitz.Rect(0, page.rect.height-18, page.rect.width, page.rect.height)  # rectangle shape
+            r2 = fitz.Rect(36, page.rect.height-18, page.rect.width-36, page.rect.height)  # rectangle text
+            r_rot = r * page.derotation_matrix
+            r_rot2 = r2 * page.derotation_matrix
             shape = page.new_shape()  # create Shape
             shape.draw_rect(r_rot)  # draw rectangles
-            shape.finish(width = 0.3, color = (0,0,0), fill = (1,1,1))
+            shape.finish(width = 0.3, color = (0,0,0), fill = (0.8,0.8,0.8))
+            logger.trace(f'Header placement: file {os.path.basename(f)}, page {page.number}, rotation={page.rotation}, page.rect={page.rect}, r={r}, r_rot={r_rot}')
             rotate_text = 0
-            if r != r_rot:
-                rotate_text = 90
+            if r2 != r_rot2:
+                rotate_text = page.rotation
+            fontsize = 11
             t = unidecode(f' [{page.number+1}/{len(doc)}] Bod {item.id} {item.name[:20]} | {attachment.name[:60]}')
-            rc = shape.insert_textbox(r_rot, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo', rotate=rotate_text)
+            rc = shape.insert_textbox(r_rot2, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo', fontsize=fontsize, rotate=rotate_text)
             shape.commit()  # write all stuff to page /Contents
             doc.save(f, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
         doc.close()
