@@ -414,6 +414,17 @@ def edit_programme_item_html(item):
     else:
         bookmark2 = bs(f'<div id="pitem_{item.id}_attachments"></div>', 'html.parser')
         text.insert_after(bookmark2)
+    # remove style attributes
+    remove_attributes = ['style','font','face','size','color']    
+    for tag in soup.descendants:
+        try:
+            # logger.error(f'tag.attrs type {type(tag.attrs), {tag}}')
+            tag.attrs = dict((key,value) for key,value in tag.attrs.items()
+                        if key not in remove_attributes)
+        except AttributeError: 
+            # 'NavigableString' object has no attribute 'attrs'
+            pass    
+
     # close and save
     html.close()
     content = soup.prettify("utf-8")
@@ -656,6 +667,16 @@ def update_index_html(index_filepath, tmp_path, header, items):
             tag.string = elmnts[i].contents[0]
             tag.attrs['href'] = f"html/pitem_{i}.html"
             elmnts[i].contents[0].replace_with(tag)
+    # remove style attributes
+    remove_attributes = ['style','font','face','size','color']    
+    for tag in soup.descendants:
+        try:
+            # logger.error(f'tag.attrs type {type(tag.attrs), {tag}}')
+            tag.attrs = dict((key,value) for key,value in tag.attrs.items()
+                        if key not in remove_attributes)
+        except AttributeError: 
+            # 'NavigableString' object has no attribute 'attrs'
+            pass    
     html.close()
     content = soup.prettify("utf-8")
     with open(tmp_index_filepath, "wb") as file:
