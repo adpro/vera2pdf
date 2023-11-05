@@ -119,12 +119,34 @@ def convert_file_to_supported_type(old_filepath, tmp_path) -> str:
     if ext in ['.docx', '.doc', '.odt', 
                '.xls', '.xlsx', '.ods',
                '.ppt', '.pptx', '.odp',
-               '.txt',
-               '.jpg', '.jpeg', '.png', '.bmp', '.tif']:
-        logger.info(f'\tConverting {os.path.basename(old_filepath)} to {os.path.basename(new_filepath)}...')
+               '.txt'
+               ]:
+        logger.info(f'\tConverting {os.path.basename(old_filepath)} to {os.path.basename(new_filepath)} by LibreOffice...')
+        if not os.path.exists(old_filepath):
+            logger.error(f'File to convert {new_filepath} does not exists.')
         subprocess.call([get_libre_office_path(), '--headless', '--convert-to', 'pdf', old_filepath, '--outdir', new_path]
                         , stdout=subprocess.DEVNULL 
                         , stderr=subprocess.STDOUT)
+        if os.path.exists(new_filepath):
+            return new_filepath, 'pdf'
+        else:
+            logger.error(f'Converted file {new_filepath} does not exists.')
+            return new_filepath, 'pdf'
+    elif ext in ['.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff','.psd']:
+        logger.info(f'\tConverting {os.path.basename(old_filepath)} to {os.path.basename(new_filepath)} by PyMuPDF...')
+        doc = fitz.open()
+        img = fitz.open(old_filepath)  # open pic as document
+        rect = img[0].rect  # pic dimension
+        pdfbytes = img.convert_to_pdf()  # make a PDF stream
+        img.close()  # no longer needed
+        imgPDF = fitz.open("pdf", pdfbytes)  # open stream as PDF
+        width, height = fitz.paper_size("a4")  # A4 portrait output page format
+        page = doc.new_page(width = width, height = height)
+        insert_rect = fitz.Rect(18,18,page.rect.br[0]-18,page.rect.br[1]-18)    # 18 points margin around page
+        mat = rect.torect(insert_rect)  # create Matrix to scale image to A4 page
+        page.show_pdf_page(rect * mat, imgPDF)  # image fills the page with scale (mat)
+        doc.save(new_filepath, garbage=4, deflate=True)
+        doc.close()
         return new_filepath, 'pdf'
     else:
         new_filename = '.'.join([filename,ext[1:]])
