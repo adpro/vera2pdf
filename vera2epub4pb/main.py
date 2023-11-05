@@ -534,15 +534,19 @@ def add_header_to_attachment(item, attachment):
             r_rot2 = r2 * page.derotation_matrix
             shape = page.new_shape()  # create Shape
             shape.draw_rect(r_rot)  # draw rectangles
-            shape.finish(width = 0.3, color = (0,0,0), fill = (0.8,0.8,0.8))
+            shape.finish(width = 0.0, color = (0,0,0), fill = (1,1,1))
             logger.trace(f'Header placement: file {os.path.basename(f)}, page {page.number}, rotation={page.rotation}, page.rect={page.rect}, r={r}, r_rot={r_rot}')
             rotate_text = 0
             if r2 != r_rot2:
                 rotate_text = page.rotation
             fontsize = 11*scale
-            t = unidecode(f' [{page.number+1}/{len(doc)}] Bod {item.id} {item.name[:20]} | {attachment.name[:60]}')
+            text = f'{item.name} # {attachment.name}'
+            if len(text) > 105:
+                text = f'{item.name[:25]} # {attachment.name[:80]}'
+            t = unidecode(f'Strana {page.number+1} z {len(doc)} # Bod {item.id} - {text}')
             rc = shape.insert_textbox(r_rot2, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo', fontsize=fontsize, rotate=rotate_text)
             shape.commit()  # write all stuff to page /Contents
+
             doc.save(f, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
         doc.close()
 
@@ -578,19 +582,19 @@ def update_programme_item_links_to_local(pitem_pages_no, doc, pdf_file, item, at
     for p_index in range(pitem_pages_no, min(pitem_pages_no + sum(attachments_pages_no), len(doc))):
         logger.trace(f'Adding "Zpet" link.. p_index: {p_index}, pitem_pages_no: {pitem_pages_no}, whole pages: {pitem_pages_no + sum(attachments_pages_no)}, doc pages: {len(doc)}')
         page = doc[p_index]
+        # get scale to A4
+        a4_height = fitz.paper_size('a4')[1]    # get height from (width, height) tuple
+        page_height = page.rect.height
+        scale = page_height/a4_height
+        # drawing back link
         rect = page.bound() # get page dimensions
-        r = fitz.Rect(rect.width-38,40,rect.width-8,56)  # rectangle
-        r_rot = r * page.rotation_matrix
-        shape = page.new_shape()  # create Shape
-        shape.draw_rect(r_rot)  # draw rectangles
-        shape.finish(width = 0.3, color = (0,0,0), fill = (0.8,0.8,0.8))
-        t = unidecode(f' Zpet ')
-        rotate_text = 0
-        if r != r_rot:
-            rotate_text = 90
-        rc = shape.insert_textbox(r, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo', rotate=rotate_text)
-        shape.commit()  # write all stuff to page /Contents
-        link_dict = {'kind': fitz.LINK_GOTO, 'from': r, 'page': 0}
+        r = fitz.Rect(page.rect.width-(200*scale), page.rect.height-(118*scale), page.rect.width, page.rect.height)  # rectangle
+        r_rot = r * page.derotation_matrix
+        # shape = page.new_shape()  # create Shape
+        # shape.draw_rect(r_rot)  # draw rectangles
+        # shape.finish(width = 0.6, color = (0,1,0))
+        # shape.commit()  # write all stuff to page /Contents
+        link_dict = {'kind': fitz.LINK_GOTO, 'from': r_rot, 'page': 0}
         page.insert_link(link_dict)
     doc.save(pdf_file, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
 
