@@ -298,25 +298,27 @@ def convert_files_to_pdf(items, tmp_path):
     return updated_p_items
 
 
-# def rotate_landscape_pdf_files(items):
-#     for item in items:
-#         for attachment in item.attachments: 
-#             if len(attachment.files) == 1:
-#                 flag = 0
-#                 filepath = attachment.files[0]
-#                 ext = pathlib.Path(filepath).suffix.lower()
-#                 if ext == '.pdf':
-#                     # pdf = Pdf.open(filepath, allow_overwriting_input=True)
-#                     for page in pdf.pages:
-#                         cbox = page.cropbox
-#                         cbox_x = float(cbox[2]-cbox[0])/72*2.54
-#                         cbox_y = float(cbox[3]-cbox[1])/72*2.54
-#                         if cbox_x > cbox_y:
-#                             if flag == 0:
-#                                 logger.debug(f'\tRotating {filepath}')
-#                                 flag = 1                      
-#                             page.rotate(270, False)
-#                     pdf.save(filepath)
+def rotate_landscape_pdf_file(attachment):
+    if len(attachment.files) == 1:
+        flag = 0
+        filepath = attachment.files[0]
+        ext = pathlib.Path(filepath).suffix.lower()
+        if ext == '.pdf':
+            doc = fitz.open(filepath)
+            for page in doc:
+                logger.trace(f'File {filepath}, page {page.number}, rotation {page.rotation} deg, mediabox: {page.mediabox_size}, cropbox: {page.cropbox} WxH {page.cropbox.width}x{page.cropbox.height}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
+                if page.rect.width > page.rect.height:    # landscape
+                    if flag == 0:
+                        logger.debug(f'\tRotating {filepath}')
+                        flag = 1                      
+                    logger.trace(f'Rotating {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')                    
+                    if page.rotation in (90,270):
+                        page.set_rotation(0)
+                    else:
+                        page.set_rotation(270)
+                    logger.trace(f'After rotation of {filepath}, page {page.number}, rect: {page.rect}, width={page.rect.width}, height={page.rect.height}, top-left corner at {fitz.Point(0,0) * page.rotation_matrix}')
+            doc.save(filepath, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+            doc.close()
 
 
 def debug_print_items_attachments(items):
@@ -495,12 +497,19 @@ def add_header_to_attachment(item, attachment):
         page_count = doc.page_count
         for i in range(page_count):
             page = doc[i]
-            r = fitz.Rect(36,18,536,36)  # rectangle
+            if not page.is_wrapped:
+                page.wrap_contents()
+            # r = fitz.Rect(36,18,536,36)  # rectangle
+            r = fitz.Rect(36,page.rect.height-18,559,page.rect.height)  # rectangle
+            r_rot = r * page.rotation_matrix
             shape = page.new_shape()  # create Shape
-            shape.draw_rect(r)  # draw rectangles
+            shape.draw_rect(r_rot)  # draw rectangles
             shape.finish(width = 0.3, color = (0,0,0), fill = (1,1,1))
-            t = unidecode(f' Bod {item.id} {item.name[:20]} | {attachment.name[:60]}')
-            rc = shape.insert_textbox(r, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo')
+            rotate_text = 0
+            if r != r_rot:
+                rotate_text = 90
+            t = unidecode(f' [{page.number+1}/{len(doc)}] Bod {item.id} {item.name[:20]} | {attachment.name[:60]}')
+            rc = shape.insert_textbox(r_rot, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo', rotate=rotate_text)
             shape.commit()  # write all stuff to page /Contents
             doc.save(f, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
         doc.close()
@@ -539,11 +548,15 @@ def update_programme_item_links_to_local(pitem_pages_no, doc, pdf_file, item, at
         page = doc[p_index]
         rect = page.bound() # get page dimensions
         r = fitz.Rect(rect.width-38,40,rect.width-8,56)  # rectangle
+        r_rot = r * page.rotation_matrix
         shape = page.new_shape()  # create Shape
-        shape.draw_rect(r)  # draw rectangles
+        shape.draw_rect(r_rot)  # draw rectangles
         shape.finish(width = 0.3, color = (0,0,0), fill = (0.8,0.8,0.8))
         t = unidecode(f' Zpet ')
-        rc = shape.insert_textbox(r, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo')
+        rotate_text = 0
+        if r != r_rot:
+            rotate_text = 90
+        rc = shape.insert_textbox(r, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo', rotate=rotate_text)
         shape.commit()  # write all stuff to page /Contents
         link_dict = {'kind': fitz.LINK_GOTO, 'from': r, 'page': 0}
         page.insert_link(link_dict)
@@ -578,6 +591,7 @@ def create_programme_item_pdfs(header, items, tmp_dir):
             repair_pdf_if_needed(attachment, tmp_dir)
             pdf_att_pages_no = join_attachment_pdf_files(attachment, item)
             attachments_pages_no.append(pdf_att_pages_no)
+            rotate_landscape_pdf_file(attachment)            
             add_header_to_attachment(item, attachment)
             join_with_programme_item(attachment, doc, pdf_file)
         # update links in joined programme item with attachments
