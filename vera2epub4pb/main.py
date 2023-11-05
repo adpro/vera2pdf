@@ -596,6 +596,12 @@ def update_programme_item_links_to_local(pitem_pages_no, doc, pdf_file, item, at
         # shape.commit()  # write all stuff to page /Contents
         link_dict = {'kind': fitz.LINK_GOTO, 'from': r_rot, 'page': 0}
         page.insert_link(link_dict)
+        
+        link_rect = fitz.Rect(page.rect.bl[0],page.rect.bl[1]-118,page.rect.bl[0]+200,page.rect.bl[1]) * page.rotation_matrix
+        logger.trace(f'2nd link rect: {link_rect}')
+        link_dict = {'kind': fitz.LINK_GOTO, 'from': link_rect, 'page': 0}
+        page.insert_link(link_dict)
+
     doc.save(pdf_file, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
 
 
