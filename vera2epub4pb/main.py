@@ -501,8 +501,13 @@ def add_header_to_attachment(item, attachment):
                 page.wrap_contents()
             # r = fitz.Rect(36,18,536,36)  # rectangle
             page = doc[i]
-            r = fitz.Rect(0, page.rect.height-18, page.rect.width, page.rect.height)  # rectangle shape
-            r2 = fitz.Rect(36, page.rect.height-18, page.rect.width-36, page.rect.height)  # rectangle text
+            # get scale to A4
+            a4_height = fitz.paper_size('a4')[1]    # get height from (width, height) tuple
+            page_height = page.rect.height
+            scale = page_height/a4_height
+            # positioning and drawing
+            r = fitz.Rect(0, page.rect.height-(18*scale), page.rect.width, page.rect.height)  # rectangle shape
+            r2 = fitz.Rect((36*scale), page.rect.height-(18*scale), page.rect.width-(36*scale), page.rect.height)  # rectangle text
             r_rot = r * page.derotation_matrix
             r_rot2 = r2 * page.derotation_matrix
             shape = page.new_shape()  # create Shape
@@ -512,7 +517,7 @@ def add_header_to_attachment(item, attachment):
             rotate_text = 0
             if r2 != r_rot2:
                 rotate_text = page.rotation
-            fontsize = 11
+            fontsize = 11*scale
             t = unidecode(f' [{page.number+1}/{len(doc)}] Bod {item.id} {item.name[:20]} | {attachment.name[:60]}')
             rc = shape.insert_textbox(r_rot2, t, color = (0,0,0), encoding=fitz.TEXT_ENCODING_LATIN, fontname='TiRo', fontsize=fontsize, rotate=rotate_text)
             shape.commit()  # write all stuff to page /Contents
