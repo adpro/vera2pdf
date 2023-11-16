@@ -59,9 +59,10 @@ def parse_programme_header(root) -> ProgrammeHeader:
         rows = root.xpath('//table[@class="hlavicka"]/tbody/tr/td')
     if len(rows) < 5:
         raise WrongProgrammeFormatError
-    header.title = remove_spaces(rows[0].text)
-    header.no_council_meeting = remove_spaces(rows[1].text)
-    header.location_and_time = ' '.join([remove_spaces(rows[2].text), remove_spaces(rows[3].text)])
+    # logger.error(f'Header rows: {[x.text for x in rows]}')
+    header.title = remove_spaces(rows[3].text)
+    header.no_council_meeting = remove_spaces(rows[4].text)
+    header.location_and_time = ' '.join([remove_spaces(rows[5].text), remove_spaces(rows[6].text)])
     return header
 
 
@@ -198,7 +199,8 @@ def process_item_wo_link(el, item):
 
 def parse_programme_item(el) -> ProgrammeItem:
     item = ProgrammeItem()
-    if len(el) != 4:
+    if len(el) != 3: # old 4:
+        logger.error(f'Wrong programme Format. el: {el}')
         raise WrongProgrammeFormatError
     # id
     item.id = remove_spaces(el[0].text.replace('.',''))    
@@ -210,7 +212,7 @@ def parse_programme_item(el) -> ProgrammeItem:
         process_item_wo_link(el[1], item)
     
     # time
-    item.time = remove_spaces(el[3].text)
+    item.time = remove_spaces(el[2].text)
     
     return item
 
@@ -333,6 +335,8 @@ def get_pdf_ebook_name(header) -> str:
         prefix = 'ZM_'
     if 'rad' in header.no_council_meeting.lower():
         prefix = 'RM_'
+    # logger.error(f'Loc and time: {header.location_and_time}')
+    # logger.error(f'Loc and time split: {header.location_and_time.split()}')
     date_of_meeting = header.location_and_time.split()[3].split('.')
     month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
     day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
