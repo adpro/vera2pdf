@@ -138,3 +138,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+vera2epub4pb/jpg2pdf.py
+vera2epub4pb/_run.sh
