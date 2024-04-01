@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "vera2epub4pb"
+name = "vera2pdf"
 version = "0.1.0"
 description = ""
 authors = ["Aleš Daniel <ales.daniel@adpro.cz>"]
 readme = "README.md"
-packages = [{include = "vera2epub4pb"}]
+packages = [{include = "vera2pdf"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 lxml = "^4.9.1"
 ebooklib = "^0.17.1"
 pikepdf = "^6.2.1"
@@ -24,7 +24,7 @@ pytest = "^7.2.0"
 
 [tool.pytest.ini_options]
 pythonpath = [
-    ".", "vera2epub4pb"
+    ".", "vera2pdf"
 ]
 
 [build-system]
