@@ -199,7 +199,7 @@ def process_item_wo_link(el, item):
 
 def parse_programme_item(el) -> ProgrammeItem:
     item = ProgrammeItem()
-    if len(el) != 3: # old 4:
+    if len(el) != 2: # old 3: # older 4:
         logger.error(f'Wrong programme Format. el: {el}')
         raise WrongProgrammeFormatError
     # id
@@ -212,7 +212,7 @@ def parse_programme_item(el) -> ProgrammeItem:
         process_item_wo_link(el[1], item)
     
     # time
-    item.time = remove_spaces(el[2].text)
+    item.time = '' # remove_spaces(el[2].text)
     
     return item
 
@@ -393,10 +393,14 @@ def copy_html_to_temp_folder(tmp_path, items, header):
 def edit_programme_item_html(item):
     html = open(item.temp_link)
     soup = bs(html, 'html.parser')
+    logger.trace(f'Editing html in {item.temp_link} in {item.id}')
     # change podpisy to voting
     element = soup.find("table", {"class": "podpisy"})
     new_content = bs('<table class="podpisy"><tr><td>Hlasování:</td><td>Pro ____ </td><td>Proti ____ </td><td>Zdržel se: ____ </td><td>Nehlasoval: ____ </td></tr></table><table class="podpisy"><tr><td width="30%">Usnesení přijato:</td><td width="20%">&#9634; ANO</td><td width="20%">&#9634; NE</td><td width="30%">&#9634; Staženo</td></tr></table><hr class="cela">', 'html.parser')
-    element.replace_with(new_content)
+    if element is None:
+        logger.error(f'Table class podpisy not found in item {item.id} in file {os.path.basename(item.temp_link)}.')
+    else:
+        element.replace_with(new_content)
     # add notes to the end
     # element = soup.find("table", {"class": "akteri"})
     element = soup.find_all("hr", {"class": "cela"})[-1]
