@@ -5,7 +5,8 @@ from uuid import uuid4
 class ProgrammeHeader():
     title: str = ""
     no_council_meeting: str = ""
-    location_and_time: str = ""
+    location: str = ""
+    time: str = ""
 
 
 @dataclass

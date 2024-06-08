@@ -63,7 +63,8 @@ def parse_programme_header(root) -> ProgrammeHeader:
     # logger.error(f'Header rows: {[x.text for x in rows]}')
     header.title = remove_spaces(rows[3].text)
     header.no_council_meeting = remove_spaces(rows[4].text)
-    header.location_and_time = ' '.join([remove_spaces(rows[5].text), remove_spaces(rows[6].text)])
+    header.time = remove_spaces(rows[5].text)
+    header.location = remove_spaces(rows[6].text)
     return header
 
 
@@ -333,7 +334,7 @@ def debug_print_items_attachments(items):
 
 def get_pdf_ebook_name(header) -> str:
     if 'rozpo' in header.no_council_meeting.lower():
-        year = header.location_and_time.split()[2]
+        year = header.time.split()[2]
         cur_date = datetime.today().strftime('%Y%m%d')
         return f'Rozpocet_{year}_A4_{cur_date}.pdf'
     else:
@@ -341,9 +342,9 @@ def get_pdf_ebook_name(header) -> str:
             prefix = 'ZM_'
         if 'rad' in header.no_council_meeting.lower():
             prefix = 'RM_'
-        # logger.error(f'Loc and time: {header.location_and_time}')
-        # logger.error(f'Loc and time split: {header.location_and_time.split()}')
-        date_of_meeting = header.location_and_time.split()[3].split('.')
+        # logger.error(f'Time: {header.time}')
+        # logger.error(f'Loc: {header.location}')
+        date_of_meeting = header.time.split()[3].split('.')
         month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
         day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
         return f'{prefix}{date_of_meeting[2]}-{month}-{day}_A4.pdf'
@@ -356,7 +357,7 @@ def create_html_page(item, filepath, header):
         id=item.id,
         no_council_meeting=header.no_council_meeting,
         title=header.title,
-        location_and_time=header.location_and_time,
+        time=header.time,
         name=item.name,
         presenter=item.presenter
     )
@@ -839,7 +840,8 @@ def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
     content = template.render(
         no_council_meeting=header.no_council_meeting,
         title=header.title,
-        location_and_time=header.location_and_time,
+        time=header.time,
+        location=header.location
     )
     filepath = os.path.join(tmp_path, "cover.html")
     with open(filepath, mode="w", encoding="utf-8") as message:
