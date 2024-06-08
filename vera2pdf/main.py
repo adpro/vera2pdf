@@ -15,6 +15,7 @@ import pdfkit
 import fitz
 
 from io import StringIO, BytesIO
+from datetime import datetime
 
 from loguru import logger
 from lxml import etree
@@ -331,16 +332,21 @@ def debug_print_items_attachments(items):
 # ====================== single PDF output file ======================
 
 def get_pdf_ebook_name(header) -> str:
-    if 'zastupit' in header.no_council_meeting.lower():
-        prefix = 'ZM_'
-    if 'rad' in header.no_council_meeting.lower():
-        prefix = 'RM_'
-    # logger.error(f'Loc and time: {header.location_and_time}')
-    # logger.error(f'Loc and time split: {header.location_and_time.split()}')
-    date_of_meeting = header.location_and_time.split()[3].split('.')
-    month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
-    day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
-    return f'{prefix}{date_of_meeting[2]}-{month}-{day}_A4.pdf'
+    if 'rozpo' in header.no_council_meeting.lower():
+        year = header.location_and_time.split()[2]
+        cur_date = datetime.today().strftime('%Y%m%d')
+        return f'Rozpocet_{year}_A4_{cur_date}.pdf'
+    else:
+        if 'zastupit' in header.no_council_meeting.lower():
+            prefix = 'ZM_'
+        if 'rad' in header.no_council_meeting.lower():
+            prefix = 'RM_'
+        # logger.error(f'Loc and time: {header.location_and_time}')
+        # logger.error(f'Loc and time split: {header.location_and_time.split()}')
+        date_of_meeting = header.location_and_time.split()[3].split('.')
+        month = '0'+date_of_meeting[1] if int(date_of_meeting[1])<10 else date_of_meeting[1]
+        day = '0'+date_of_meeting[0] if int(date_of_meeting[0])<10 else date_of_meeting[0]
+        return f'{prefix}{date_of_meeting[2]}-{month}-{day}_A4.pdf'
 
 
 def create_html_page(item, filepath, header):
