@@ -541,6 +541,7 @@ def join_attachment_pdf_files(attachment, tmp_path):
 
 def add_header_to_attachment(item, attachment):
     for f in attachment.files:
+        logger.info(f"\t\tAdding header to attachment {os.path.basename(f)}.")
         doc = fitz.open(f)
         page_count = doc.page_count
         for i in range(page_count):
