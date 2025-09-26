@@ -3,12 +3,12 @@
 ![License](https://img.shields.io/github/license/adpro/vera2pdf)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/adpro/vera2pdf)
 
-aka converter of the programme for members of the Council and the Council from IS VERA in its format eJednání to PDF A4 file, primarily for the Fujitsu Quaderno e-ink reader.
+aka converter of the programme for members of the Council from IS VERA in its format eJednání to PDF A4 file, primarily for the Fujitsu Quaderno e-ink reader.
 
 ## Prerequisites
 
 ### Operating system
-If you want to use this tool in **developer way** like `python main.py`, you can use MacOS, Windows or Linux. Tool is tested only on MacOS 14.x Sonoma.
+If you want to use this tool in **developer way** like `python main.py`, you can use MacOS, Windows or Linux. Tool is tested only on MacOS 14.x Sonoma or newer.
 
 ### Software installed
 For PDF conversion tool needs LibreOffice installed. Tested with LibreOffice 7.3 and LibreOffice 24.2.x.
