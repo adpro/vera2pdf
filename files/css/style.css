@@ -5,14 +5,15 @@ body{line-height:1;}
 ol, ul{list-style:none;}
 blockquote, q{quotes:none;}
 blockquote:before, blockquote:after,q:before, q:after{content:'';content:none;}
-@font-face { font-family: "Literata"; src: local("Literata"), url("../fonts/literata-regular.otf") format("opentype"); }
-@font-face { font-family: "Literata Bold"; src: local("Literata-bold"), url("../fonts/literata-bold.otf") format("opentype"); }
-@font-face { font-family: "Literata Italic"; src: local("Literata-italic"), url("../fonts/literata-italic.otf") format("opentype"); }
+@font-face { font-family: "Literata"; src: url("../fonts/literata-regular.otf") format("opentype"); }
+@font-face { font-family: "Literata Bold"; src: url("../fonts/literata-bold.otf") format("opentype"); }
+@font-face { font-family: "Literata Italic"; src: url("../fonts/literata-italic.otf") format("opentype"); }
 span { font-family: initial !important; font-size: initial !important; line-height: initial !important}
 span span { font-family: initial !important; font-size: initial !important; line-height: initial !important}
 span span span{ font-family: initial !important; font-size: initial !important; line-height: initial !important}
 /*GLOBAL*/
-@media screen{body{color:#000;background-color:#FFF;font-family: Literata, courier, Tahoma, Geneva, serif;margin:2.45em 0; font-size:13pt;}}
+@media screen{body{color:#000;background-color:#FFF;font-family: "Literata", serif;margin:2.45em 0; font-size:13pt;}}
+@page { size: A4; margin: 0.5in; }
 #content{margin-left:auto;margin-right:auto;width:49.61em;line-height:1.5;text-align:justify;}
 hr{border:none 0;border-top:1px solid;height:1px;}
 hr.cela{width:100%;}
@@ -64,4 +65,4 @@ table.vnorenaTabulka{width:100%;font-weight:normal;}
 table.vnorenaTabulka td{padding:0;}
 td.hlasovani{vertical-align:top;text-align:justify;}
 /*PRINT*/
-@media print{body{color:#000;background-color:#FFF;font-family: Literata, courier, serif;margin:2.45em 0; font-size:13pt;}}
+@media print{body{color:#000;background-color:#FFF;font-family: "Literata", serif;margin:2.45em 0; font-size:13pt;}}

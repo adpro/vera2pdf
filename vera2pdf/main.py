@@ -11,7 +11,9 @@ import sys
 import argparse
 import shutil
 
-import pdfkit
+# import pdfkit
+from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
 import fitz
 
 from io import StringIO, BytesIO
@@ -365,6 +367,34 @@ def create_html_page(item, filepath, header):
         message.write(content)
 
 
+def render_html_to_pdf(html_path, pdf_path, base_dir=None, extra_css=None):
+    """
+    Render HTML file to PDF using WeasyPrint.
+    base_dir is important for relative links to css/fonts/images.
+    """
+    if base_dir is None:
+        base_dir = os.path.dirname(os.path.abspath(html_path))
+
+    font_config = FontConfiguration()
+
+    stylesheets = []
+    if extra_css:
+        for css_path in extra_css:
+            stylesheets.append(
+                CSS(filename=css_path, font_config=font_config)
+            )
+
+    HTML(
+        filename=html_path,
+        base_url=base_dir,
+        media_type="print",
+    ).write_pdf(
+        target=pdf_path,
+        stylesheets=stylesheets,
+        font_config=font_config,
+    )
+
+
 def copy_html_to_temp_folder(tmp_path, items, header):
     html_filepath = os.path.join(tmp_path, "html")
     if not os.path.exists(html_filepath):
@@ -448,28 +478,42 @@ def edit_programme_item_html(item):
 
 
 def print_programme_item(item, tmp_path):
+    # filepath_pdf = os.path.join(tmp_path, f"pitem_{item.id}.pdf")
+    # options = {
+    #     'page-size': 'A4',
+    #     'margin-top': '0.5in',
+    #     'margin-right': '0.5in',
+    #     'margin-bottom': '0.5in',
+    #     'margin-left': '0.5in',
+    #     'encoding': "UTF-8",
+    #     'enable-local-file-access': None,
+    #     'no-outline': None,
+    #     'orientation': 'Portrait',
+    #     'header-font-name': 'Literata, Times New Roman',
+    #     'header-font-size': 13,    
+    # }
+    # pdfkit.from_file(item.temp_link, 
+    #                  filepath_pdf, 
+    #                  options=options,
+    #                  verbose=False)
+    # if os.path.exists(filepath_pdf):
+    #     logger.info(f"\tProgramme item written in {os.path.basename(filepath_pdf)}.")
+    # else:
+    #     logger.error(f'Something wrong during programme item writing to {filepath_pdf}.')
+    # return filepath_pdf
+
     filepath_pdf = os.path.join(tmp_path, f"pitem_{item.id}.pdf")
-    options = {
-        'page-size': 'A4',
-        'margin-top': '0.5in',
-        'margin-right': '0.5in',
-        'margin-bottom': '0.5in',
-        'margin-left': '0.5in',
-        'encoding': "UTF-8",
-        'enable-local-file-access': None,
-        'no-outline': None,
-        'orientation': 'Portrait',
-        'header-font-name': 'Literata, Times New Roman',
-        'header-font-size': 13,    
-    }
-    pdfkit.from_file(item.temp_link, 
-                     filepath_pdf, 
-                     options=options,
-                     verbose=False)
+
+    render_html_to_pdf(
+        html_path=item.temp_link,
+        pdf_path=filepath_pdf,
+        base_dir=tmp_path,
+    )
+
     if os.path.exists(filepath_pdf):
         logger.info(f"\tProgramme item written in {os.path.basename(filepath_pdf)}.")
     else:
-        logger.error(f'Something wrong during programme item writing to {filepath_pdf}.')
+        logger.error(f"Something wrong during programme item writing to {filepath_pdf}.")
     return filepath_pdf
 
 
@@ -703,28 +747,41 @@ def update_index_html(index_filepath, tmp_path, header, items):
 
 
 def print_programme(header, tmp_path, tmp_index_filepath):
+    # filepath_pdf = os.path.join(tmp_path, "index.pdf")
+    # options = {
+    #     'page-size': 'A4',
+    #     'margin-top': '0.5in',
+    #     'margin-right': '0.5in',
+    #     'margin-bottom': '0.5in',
+    #     'margin-left': '0.5in',
+    #     'encoding': "UTF-8",
+    #     'enable-local-file-access': None,
+    #     'no-outline': None,
+    #     'orientation': 'Portrait',
+    #     'header-font-name': 'Literata, Times New Roman',
+    #     'header-font-size': 13,    
+    # }
+    # pdfkit.from_file(tmp_index_filepath, 
+    #                  filepath_pdf,
+    #                  options=options,
+    #                  verbose=False)
+    # if os.path.exists(filepath_pdf):
+    #     logger.info(f"\tProgramme written in {os.path.basename(filepath_pdf)}.")
+    # else:
+    #     logger.error(f'Something wrong during programme writing to {filepath_pdf}.')
+    # return filepath_pdf
     filepath_pdf = os.path.join(tmp_path, "index.pdf")
-    options = {
-        'page-size': 'A4',
-        'margin-top': '0.5in',
-        'margin-right': '0.5in',
-        'margin-bottom': '0.5in',
-        'margin-left': '0.5in',
-        'encoding': "UTF-8",
-        'enable-local-file-access': None,
-        'no-outline': None,
-        'orientation': 'Portrait',
-        'header-font-name': 'Literata, Times New Roman',
-        'header-font-size': 13,    
-    }
-    pdfkit.from_file(tmp_index_filepath, 
-                     filepath_pdf,
-                     options=options,
-                     verbose=False)
+
+    render_html_to_pdf(
+        html_path=tmp_index_filepath,
+        pdf_path=filepath_pdf,
+        base_dir=tmp_path,
+    )
+
     if os.path.exists(filepath_pdf):
         logger.info(f"\tProgramme written in {os.path.basename(filepath_pdf)}.")
     else:
-        logger.error(f'Something wrong during programme writing to {filepath_pdf}.')
+        logger.error(f"Something wrong during programme writing to {filepath_pdf}.")
     return filepath_pdf
 
 
@@ -767,51 +824,121 @@ def create_pdf_shape_link(page, width, pos_y, text):
     return r
 
 
+# def update_links_in_joined_pdf(joined_pdf, pages):
+#     link_height = 128
+#     doc = fitz.open(joined_pdf)
+#     logger.trace(f'Linking programme to programme items pages. Pages: {pages}, sums: {[sum(pages[:i]) for i in range(len(pages))]}')
+#     idx = 0
+#     for p_index in range(pages[0]):
+#         links = doc[p_index].get_links()
+#         logger.trace(f'LINKS in index page {p_index}: {doc[p_index].get_links()}')
+#         for i in range(len(links)):
+#             link_dict = links[i]
+#             link_dict['kind'] = fitz.LINK_GOTO
+#             link_dict['page'] = sum(pages[:idx+i+1])
+#             logger.trace(f'Update link dict: {link_dict}')
+#             logger.info(f"doc pages total={len(doc)}, pages={pages}, p_index={p_index}, idx={idx}, i={i}, target={sum(pages[:idx+i+1])}, links_on_page={len(links)}")
+#             doc[p_index].update_link(link_dict)
+#             # insert backlink
+#             page = doc[sum(pages[:idx+i+1])]
+#             p = fitz.Point(0, 0)
+#             logger.trace(f'Program link. Page bounds: {page.rect}. Top-left (0,0): {p * page.rotation_matrix}')
+#             # link to programme page from top-center
+#             link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(200,0,400,link_height), 'page': p_index}
+#             page.insert_link(link_dict2)
+#         idx += len(links)
+#     doc.save(joined_pdf, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+#     logger.trace(f'Linking programme items to other programme items (prev/next).')
+#     for i in range(len(pages)-1):
+#         # if i == len(pages) - 2:
+#         #     page = doc[sum(pages[:i+1])-1]
+#         # else:
+#         page = doc[sum(pages[:i+1])]
+#         if i == 0:
+#             # Next
+#             link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(420,0,page.rect.width,link_height), 'page': sum(pages[:i+2])}
+#             page.insert_link(link_dict)
+#         else:
+#             if len(doc)-1 > page.number:
+#                 # Next
+#                 page_number = sum(pages[:i+2])
+#                 if page_number > len(doc)-1:
+#                     page_number = len(doc)-1
+#                 link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(420,0,page.rect.width,link_height), 'page': page_number}
+#                 logger.trace(f'Programme item Next link dict: {link_dict} from page {page.number}')
+#                 page.insert_link(link_dict)
+#             # Previous
+#             link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(0,0,180,link_height), 'page': sum(pages[:i])}
+#             page.insert_link(link_dict2)
+#     doc.save(joined_pdf, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+#     doc.close()
+
 def update_links_in_joined_pdf(joined_pdf, pages):
     link_height = 128
     doc = fitz.open(joined_pdf)
-    logger.trace(f'Linking programme to programme items pages. Pages: {pages}, sums: {[sum(pages[:i]) for i in range(len(pages))]}')
-    idx = 0
+
+    total_pages = len(doc)
+
+    # první strana každého bodu programu v joined PDF
+    # pages[0] = počet stran indexu, další položky = body programu
+    item_target_pages = []
+    running = pages[0]
+    for item_len in pages[1:]:
+        item_target_pages.append(running)
+        running += item_len
+
+    item_idx = 0
+
+    logger.info(f"\tUpdating links in joined PDF..")
+    logger.info(
+        f"total_pages={total_pages}, index_pages={pages[0]}, "
+        f"programme_items={len(item_target_pages)}"
+    )
+
+    # přemapování odkazů z indexu na body programu
     for p_index in range(pages[0]):
         links = doc[p_index].get_links()
-        logger.trace(f'LINKS in index page {p_index}: {doc[p_index].get_links()}')
-        for i in range(len(links)):
-            link_dict = links[i]
-            link_dict['kind'] = fitz.LINK_GOTO
-            link_dict['page'] = sum(pages[:idx+i+1])
-            logger.trace(f'Update link dict: {link_dict}')
+        logger.info(f"index page {p_index}: found {len(links)} links")
+
+        # debug
+        for n, link_dict in enumerate(links):
+            logger.info(
+                f"page={p_index}, link#{n}, kind={link_dict.get('kind')}, "
+                f"uri={link_dict.get('uri')}, from={link_dict.get('from')}"
+            )
+
+        for link_dict in links:
+            if item_idx >= len(item_target_pages):
+                logger.warning(
+                    f"Skipping extra link on index page {p_index}; "
+                    f"found more links than programme items."
+                )
+                continue
+
+            target_page = item_target_pages[item_idx]
+
+            if not (0 <= target_page < total_pages):
+                logger.warning(
+                    f"Skipping invalid target page {target_page}; "
+                    f"document has {total_pages} pages."
+                )
+                item_idx += 1
+                continue
+
+            link_dict["kind"] = fitz.LINK_GOTO
+            link_dict["page"] = target_page
             doc[p_index].update_link(link_dict)
-            # insert backlink
-            page = doc[sum(pages[:idx+i+1])]
-            p = fitz.Point(0, 0)
-            logger.trace(f'Program link. Page bounds: {page.rect}. Top-left (0,0): {p * page.rotation_matrix}')
-            # link to programme page from top-center
-            link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(200,0,400,link_height), 'page': p_index}
-            page.insert_link(link_dict2)
-        idx += len(links)
-    doc.save(joined_pdf, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
-    logger.trace(f'Linking programme items to other programme items (prev/next).')
-    for i in range(len(pages)-1):
-        # if i == len(pages) - 2:
-        #     page = doc[sum(pages[:i+1])-1]
-        # else:
-        page = doc[sum(pages[:i+1])]
-        if i == 0:
-            # Next
-            link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(420,0,page.rect.width,link_height), 'page': sum(pages[:i+2])}
-            page.insert_link(link_dict)
-        else:
-            if len(doc)-1 > page.number:
-                # Next
-                page_number = sum(pages[:i+2])
-                if page_number > len(doc)-1:
-                    page_number = len(doc)-1
-                link_dict = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(420,0,page.rect.width,link_height), 'page': page_number}
-                logger.trace(f'Programme item Next link dict: {link_dict} from page {page.number}')
-                page.insert_link(link_dict)
-            # Previous
-            link_dict2 = {'kind': fitz.LINK_GOTO, 'from': fitz.Rect(0,0,180,link_height), 'page': sum(pages[:i])}
-            page.insert_link(link_dict2)
+
+            # zpětný odkaz z první strany bodu programu zpět na index
+            back_link = {
+                "kind": fitz.LINK_GOTO,
+                "from": fitz.Rect(200, 0, 400, link_height),
+                "page": p_index,
+            }
+            doc[target_page].insert_link(back_link)
+
+            item_idx += 1
+
     doc.save(joined_pdf, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
     doc.close()
 
@@ -828,13 +955,67 @@ def create_programme_index_pdf(index_filepath, tmp_path, header, items):
     return joined_pdf
 
 
+# def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
+#     logger.info(f'\tCopying custom css for frontpage to temp dir...')
+#     css_filepath = os.path.join(tmp_path, "css")
+#     if not os.path.exists(css_filepath):
+#         os.makedirs(css_filepath)
+#     css_file_path = os.path.join(css_filepath, "style_fp.css")
+#     shutil.copyfile("../files/css/style_fp.css", css_file_path)
+#     logger.info(f'\tCreating HTML cover page...')
+#     environment = Environment(loader=FileSystemLoader("../files/"))
+#     template = environment.get_template("front_page.html.j2")
+#     content = template.render(
+#         no_council_meeting=header.no_council_meeting,
+#         title=header.title,
+#         time=header.time,
+#         location=header.location
+#     )
+#     filepath = os.path.join(tmp_path, "cover.html")
+#     with open(filepath, mode="w", encoding="utf-8") as message:
+#         message.write(content)
+#     logger.info(f'\tPrinting HTML cover page to PDF...')
+#     filepath_pdf = os.path.join(tmp_path, "cover.pdf")
+#     options = {
+#         'page-size': 'A4',
+#         'margin-top': '0.5in',
+#         'margin-right': '0.5in',
+#         'margin-bottom': '0.5in',
+#         'margin-left': '0.5in',
+#         'encoding': "UTF-8",
+#         'enable-local-file-access': None,
+#         'no-outline': None,
+#         'orientation': 'Portrait',
+#         'header-font-name': 'Literata, Times New Roman',
+#         'header-font-size': 13,    
+#     }
+#     pdfkit.from_file(filepath, 
+#                      filepath_pdf,
+#                      options=options,
+#                      verbose=False)
+#     if os.path.exists(filepath_pdf):
+#         logger.info(f"\tCover page written in {os.path.basename(filepath_pdf)}.")
+#     else:
+#         logger.error(f'Something wrong during cover page writing to {filepath_pdf}.')
+#     logger.info(f'\tJoining PDF cover with programme PDF...')
+#     output_filepath = os.path.join(output_path, os.path.basename(joined_pdf))
+#     doc = fitz.open(joined_pdf)
+#     cover = fitz.open(filepath_pdf)
+#     doc.insert_pdf(cover, start_at=0)
+#     doc.save(output_filepath, garbage=4, deflate=True, linear=True) # save the document    
+#     doc.close()
+#     cover.close()
+#     return output_filepath
+
 def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
     logger.info(f'\tCopying custom css for frontpage to temp dir...')
     css_filepath = os.path.join(tmp_path, "css")
     if not os.path.exists(css_filepath):
         os.makedirs(css_filepath)
+
     css_file_path = os.path.join(css_filepath, "style_fp.css")
     shutil.copyfile("../files/css/style_fp.css", css_file_path)
+
     logger.info(f'\tCreating HTML cover page...')
     environment = Environment(loader=FileSystemLoader("../files/"))
     template = environment.get_template("front_page.html.j2")
@@ -844,38 +1025,31 @@ def insert_title_pdf_page(joined_pdf, output_path, tmp_path, header):
         time=header.time,
         location=header.location
     )
+
     filepath = os.path.join(tmp_path, "cover.html")
     with open(filepath, mode="w", encoding="utf-8") as message:
         message.write(content)
+
     logger.info(f'\tPrinting HTML cover page to PDF...')
     filepath_pdf = os.path.join(tmp_path, "cover.pdf")
-    options = {
-        'page-size': 'A4',
-        'margin-top': '0.5in',
-        'margin-right': '0.5in',
-        'margin-bottom': '0.5in',
-        'margin-left': '0.5in',
-        'encoding': "UTF-8",
-        'enable-local-file-access': None,
-        'no-outline': None,
-        'orientation': 'Portrait',
-        'header-font-name': 'Literata, Times New Roman',
-        'header-font-size': 13,    
-    }
-    pdfkit.from_file(filepath, 
-                     filepath_pdf,
-                     options=options,
-                     verbose=False)
+
+    render_html_to_pdf(
+        html_path=filepath,
+        pdf_path=filepath_pdf,
+        base_dir=tmp_path,
+    )
+
     if os.path.exists(filepath_pdf):
         logger.info(f"\tCover page written in {os.path.basename(filepath_pdf)}.")
     else:
-        logger.error(f'Something wrong during cover page writing to {filepath_pdf}.')
+        logger.error(f"Something wrong during cover page writing to {filepath_pdf}.")
+
     logger.info(f'\tJoining PDF cover with programme PDF...')
     output_filepath = os.path.join(output_path, os.path.basename(joined_pdf))
     doc = fitz.open(joined_pdf)
     cover = fitz.open(filepath_pdf)
     doc.insert_pdf(cover, start_at=0)
-    doc.save(output_filepath, garbage=4, deflate=True, linear=True) # save the document    
+    doc.save(output_filepath, garbage=4, deflate=True, linear=True)
     doc.close()
     cover.close()
     return output_filepath
